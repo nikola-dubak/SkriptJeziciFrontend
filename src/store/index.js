@@ -7,7 +7,9 @@ export default new Vuex.Store({
   state: {
     token: null,
     profiles: [],
-    posts: []
+    posts: [],
+    feed: null,
+    follows: null
   },
 
   mutations: {
@@ -27,6 +29,10 @@ export default new Vuex.Store({
 
     addPost(state, post) {
       state.posts.push(post);
+    },
+
+    setFeed(state, feed) {
+      state.feed = feed;
     }
   },
 
@@ -136,6 +142,23 @@ export default new Vuex.Store({
       post = await response.json();
       commit("addPost", post);
       return post;
+    },
+
+    async getFeed({ commit, state, dispatch }) {
+      if (state.feed) {
+        return state.feed;
+      }
+      
+      const user = await dispatch("getUser");
+      const response = await fetch(`http://localhost:8000/api/posts/users/${user.id}/feed`, {
+        headers: { "Authorization": `Bearer ${state.token}` }
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const feed = await response.json();
+      commit("setFeed", feed);
+      return feed;
     }
   }
 })

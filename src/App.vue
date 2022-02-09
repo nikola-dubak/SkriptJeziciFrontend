@@ -7,9 +7,10 @@
 
       <b-collapse id="nav-collapse" is-nav>
         <b-navbar-nav>
+          <b-nav-text id="text-welcome" v-if="profile">Welcome, {{ profile.name }}!</b-nav-text>
           <b-nav-item to="/">Home</b-nav-item>
-          <b-nav-item v-if="token" :to="`/profile/${userId}`">My profile</b-nav-item>
-          <b-nav-item v-if="token" to="/groups">My groups</b-nav-item>
+          <b-nav-item v-if="token" :to="`/profiles/${userId}`">My profile</b-nav-item>
+          <b-nav-item v-if="token" to="/groups">Groups</b-nav-item>
         </b-navbar-nav>
 
         <!-- Right aligned nav items -->
@@ -36,13 +37,15 @@ export default {
   data() {
     return {
       userId: null,
-      searchQuery: ''
+      searchQuery: '',
+      profile: null
     }
   },
 
   computed: {
     ...mapState([
-      'token'
+      'token',
+      'profiles'
     ]),
 
     role() {
@@ -59,7 +62,20 @@ export default {
       if (newValue) {
         const user = await this.getUser();
         this.userId = user.id;
+        this.profile = await this.getProfile(this.userId);
       }
+      else {
+        this.userId = null;
+        this.profile = null;
+        this.$router.push({ name: "Login" });
+      }
+    },
+
+    profiles: {
+      async handler(newValue, oldValue) {
+        this.profile = await this.getProfile(this.userId);
+      },
+      deep: true
     }
   },
 
@@ -71,7 +87,8 @@ export default {
 
   methods: {
     ...mapActions([
-      'getUser'
+      'getUser',
+      'getProfile'
     ]),
 
     ...mapMutations([
@@ -81,7 +98,6 @@ export default {
 
     logout() {
       this.removeToken();
-      this.$router.push({ name: 'Login' });
     },
 
     search(e) {
@@ -97,6 +113,9 @@ export default {
 </script>
 
 <style>
+body {
+  background-color: #f1f1f1 !important;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -106,5 +125,9 @@ export default {
 }
 .container {
   margin-top: 2em;
+}
+#text-welcome {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: bold;
 }
 </style>

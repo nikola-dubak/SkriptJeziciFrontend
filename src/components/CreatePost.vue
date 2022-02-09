@@ -1,7 +1,7 @@
 <template>
   <b-form @submit="onSubmit" v-if="token" id="createPostForm" class="mx-auto">
     <b-form-group id="input-group-text" label="Create new post" label-for="input-name" description="Tell us what's on your mind today!">
-      <b-form-textarea id="input-text" v-model="form.text" placeholder="Enter something..." rows="2" no-resize></b-form-textarea>
+      <b-form-textarea id="input-text" v-model="form.text" placeholder="Enter something..." rows="3" no-resize></b-form-textarea>
     </b-form-group>
     <p>
       {{ form.text.length }}
@@ -64,12 +64,12 @@ export default {
 <style scoped>
 #createPostForm {
   width: 80%;
-  background: #d1ecf1;
-  border-radius: 10px;
-  padding: 10px;
+  background-color: #d1ecf1;
+  border-radius: .9em;
+  padding: 1em;
 }
 
 #input-text {
-  background: #d1ecf1;
+  background-color: #d1ecf1;
 }
 </style>
