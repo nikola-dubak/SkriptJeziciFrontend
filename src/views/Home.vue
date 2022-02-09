@@ -1,10 +1,12 @@
 <template>
-  <div class="home">
+  <div class="container">
+    <CreatePost />
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex';
+import CreatePost from '@/components/CreatePost.vue';
 
 export default {
   name: 'Home',
@@ -32,6 +34,10 @@ export default {
       'getUser',
       'getProfile'
     ])
+  },
+  
+  components: {
+    CreatePost
   }
 }
 </script>

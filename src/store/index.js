@@ -23,6 +23,10 @@ export default new Vuex.Store({
 
     addProfile(state, profile) {
       state.profiles.push(profile);
+    },
+
+    addPost(state, post) {
+      state.posts.push(post);
     }
   },
 
@@ -98,6 +102,23 @@ export default new Vuex.Store({
       profile = await response.json();
       commit("addProfile", profile);
       return profile;
+    },
+
+    async createPost({ commit, state }, data) {
+      const response = await fetch(`http://localhost:8000/api/posts`, {
+        method: 'POST',
+        headers: { 
+          "Authorization": `Bearer ${state.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        return false;
+      }
+      const post = await response.json();
+      commit("addPost", post);
+      return true;
     },
 
     async getPost({ commit, state }, postId) {

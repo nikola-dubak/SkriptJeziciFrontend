@@ -63,9 +63,9 @@ export default {
     }
   },
 
-  async mounted() {
+  created() {
     if (localStorage.token) {
-      await this.setToken(localStorage.token);
+      this.setToken(localStorage.token);
     }
   },
 
@@ -79,8 +79,8 @@ export default {
       'removeToken'
     ]),
 
-    async logout() {
-      await this.removeToken();
+    logout() {
+      this.removeToken();
       this.$router.push({ name: 'Login' });
     },
 
@@ -103,5 +103,8 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+}
+.container {
+  margin-top: 2em;
 }
 </style>
