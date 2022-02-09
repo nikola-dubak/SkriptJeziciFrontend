@@ -1,8 +1,8 @@
 <template>
   <div class="container">
     <CreatePost />
-    <div v-if="posts" >
-      <Post v-for="post in posts" v-bind:key="post.id" :post="post" />
+    <div v-if="feed" >
+      <Post v-for="post in feed" v-bind:key="post.id" :post="post" />
     </div>
   </div>
 </template>
@@ -15,15 +15,10 @@ import Post from '@/components/Post.vue'
 export default {
   name: 'Home',
 
-  data() {
-    return {
-      posts: null
-    }
-  },
-
   computed: {
     ...mapState([
-      'token'
+      'token',
+      'feed'
     ])
   },
 
@@ -38,7 +33,7 @@ export default {
       this.$router.push({ name: "CreateProfile" });
       return;
     }
-    this.posts = await this.getFeed();
+    await this.getFeed();
   },
 
   methods: {

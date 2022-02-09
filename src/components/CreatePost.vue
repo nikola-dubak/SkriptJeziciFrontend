@@ -56,6 +56,9 @@ export default {
       if (!postCreated) {
         alert("Failed to create post!");
       }
+      else {
+        this.form.text = "";
+      }
     },
   }
 }
@@ -65,7 +68,7 @@ export default {
 #createPostForm {
   width: 80%;
   background-color: #d1ecf1;
-  border-radius: .9em;
+  border-radius: .8em;
   padding: 1em;
 }
 

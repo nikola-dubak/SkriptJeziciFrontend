@@ -9,7 +9,11 @@ export default new Vuex.Store({
     profiles: [],
     posts: [],
     feed: null,
-    follows: null
+    groups: [],
+    follows: null,
+    joinedGroupIds: null,
+    joinedGroups: null,
+    likedPostIds: []
   },
 
   mutations: {
@@ -21,6 +25,9 @@ export default new Vuex.Store({
     removeToken(state) {
       state.token = null;
       localStorage.removeItem("token");
+      state.feed = null;
+      state.follows = null;
+      state.joinedGroupIds = null;
     },
 
     addProfile(state, profile) {
@@ -33,6 +40,50 @@ export default new Vuex.Store({
 
     setFeed(state, feed) {
       state.feed = feed;
+    },
+
+    addToFeed(state, post) {
+      state.feed.unshift(post);
+    },
+
+    addGroup(state, group) {
+      state.groups.push(group);
+    },
+
+    joinGroup(state, groupId) {
+      state.joinedGroupIds.push(groupId);
+    },
+
+    leaveGroup(state, groupId) {
+      state.joinedGroupIds = state.joinedGroupIds.filter(joinedGroupId => joinedGroupId != groupId);
+    },
+
+    setFollows(state, follows) {
+      state.follows = follows;
+    },
+
+    addFollow(state, follow) {
+      state.follows.push(follow);
+    },
+
+    removeFollow(state, removedFollow) {
+      state.follows = state.follows.filter(follow => follow.followedId != removedFollow.followedId);
+    },
+
+    setJoinedGroupIds(state, joinedGroupIds) {
+      state.joinedGroupIds = joinedGroupIds;
+    },
+
+    setLikedPostIds(state, likedPostIds) {
+      state.likedPostIds = likedPostIds;
+    },
+
+    addLike(state, postId) {
+      state.likedPostIds.push(postId);
+    },
+
+    removeLike(state, removedPostId) {
+      state.likedPostIds = state.likedPostIds.filter(postId => postId != removedPostId);
     }
   },
 
@@ -124,6 +175,7 @@ export default new Vuex.Store({
       }
       const post = await response.json();
       commit("addPost", post);
+      commit("addToFeed", post);
       return true;
     },
 
@@ -159,6 +211,212 @@ export default new Vuex.Store({
       const feed = await response.json();
       commit("setFeed", feed);
       return feed;
+    },
+
+    async getGroup({ commit, state }, groupId) {
+      let group = state.groups.filter(group => group.id == groupId)[0];
+      if (group) {
+        return group;
+      }
+
+      const response = await fetch(`http://localhost:8000/api/groups/${groupId}`, {
+        headers: { "Authorization": `Bearer ${state.token}` }
+      });
+      if (!response.ok) {
+        return null;
+      }
+      group = await response.json();
+      commit("addGroup", group);
+      return group;
+    },
+
+    async getFollows({ commit, state, dispatch }) {
+      if (state.follows) {
+        return state.follows;
+      }
+      
+      const user = await dispatch("getUser");
+      const response = await fetch(`http://localhost:8000/api/follows/users/${user.id}`, {
+        headers: { "Authorization": `Bearer ${state.token}` }
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const follows = await response.json();
+      commit("setFollows", follows);
+      return follows;
+    },
+
+    async getJoinedGroupIds({ commit, state, dispatch }) {
+      if (state.joinedGroupIds) {
+        return state.joinedGroupIds;
+      }
+
+      const user = await dispatch("getUser");
+      const response = await fetch(`http://localhost:8000/api/groupMembers/users/${user.id}`, {
+        headers: { "Authorization": `Bearer ${state.token}` }
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const groupMemberships = await response.json();
+      const joinedGroupIds = groupMemberships.map(groupMembership => groupMembership.groupId);
+      commit("setJoinedGroupIds", joinedGroupIds);
+      return joinedGroupIds;
+    },
+
+    async joinGroup({ commit, state, dispatch }, groupId) {
+      const user = await dispatch("getUser");
+      const data = {
+        userId: user.id,
+        groupId: groupId
+      };
+      const response = await fetch(`http://localhost:8000/api/groupMembers`, {
+        method: 'POST',
+        headers: { 
+          "Authorization": `Bearer ${state.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        return false;
+      }
+      commit("joinGroup", groupId);
+      commit("setFeed", null);
+      await dispatch("getFeed");
+      return true;
+    },
+
+    async leaveGroup({ commit, state, dispatch }, groupId) {
+      const user = await dispatch("getUser");
+      const data = {
+        userId: user.id,
+        groupId: groupId
+      };
+      const response = await fetch(`http://localhost:8000/api/groupMembers`, {
+        method: 'DELETE',
+        headers: { 
+          "Authorization": `Bearer ${state.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        return false;
+      }
+      commit("leaveGroup", groupId);
+      commit("setFeed", null);
+      await dispatch("getFeed");
+      return true;
+    },
+
+    async follow({ commit, state, dispatch }, followedId) {
+      const user = await dispatch("getUser");
+      const data = {
+        followerId: user.id,
+        followedId: followedId
+      };
+      const response = await fetch(`http://localhost:8000/api/follows`, {
+        method: 'POST',
+        headers: { 
+          "Authorization": `Bearer ${state.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        return false;
+      }
+      const follow = await response.json();
+      commit("addFollow", follow);
+      commit("setFeed", null);
+      await dispatch("getFeed");
+      return true;
+    },
+
+    async unfollow({ commit, state, dispatch }, followedId) {
+      const user = await dispatch("getUser");
+      const data = {
+        followerId: user.id,
+        followedId: followedId
+      };
+      const response = await fetch(`http://localhost:8000/api/follows`, {
+        method: 'DELETE',
+        headers: { 
+          "Authorization": `Bearer ${state.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        return false;
+      }
+      commit("removeFollow", data);
+      commit("setFeed", null);
+      await dispatch("getFeed");
+      return true;
+    },
+
+    async getLikedPostIds({ commit, state, dispatch }) {
+      if (state.getLikedPostIds) {
+        return state.getLikedPostIds;
+      }
+
+      const user = await dispatch("getUser");
+      const response = await fetch(`http://localhost:8000/api/likes/users/${user.id}`, {
+        headers: { "Authorization": `Bearer ${state.token}` }
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const likes = await response.json();
+      const likedPostIds = likes.map(like => like.postId);
+      commit("setLikedPostIds", likedPostIds);
+      return likedPostIds;
+    },
+
+    async like({ commit, state, dispatch}, postId) {
+      const user = await dispatch("getUser");
+      const data = {
+        userId: user.id,
+        postId: postId
+      };
+      const response = await fetch(`http://localhost:8000/api/likes`, {
+        method: 'POST',
+        headers: { 
+          "Authorization": `Bearer ${state.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        return false;
+      }
+      const follow = await response.json();
+      commit("addLike", follow.postId);
+      return true;
+    },
+
+    async unlike({ commit, state, dispatch }, postId) {
+      const user = await dispatch("getUser");
+      const data = {
+        userId: user.id,
+        postId: postId
+      };
+      const response = await fetch(`http://localhost:8000/api/likes`, {
+        method: 'DELETE',
+        headers: { 
+          "Authorization": `Bearer ${state.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        return false;
+      }
+      commit("removeLike", postId);
+      return true;
     }
   }
 })
